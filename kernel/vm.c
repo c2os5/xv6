@@ -83,18 +83,18 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
   if(va >= MAXVA)
     panic("walk");
 
-  for(int level = 2; level > 0; level--) {
-    pte_t *pte = &pagetable[PX(level, va)];
-    if(*pte & PTE_V) {
+  for(int level = 2; level > 0; level--) { // 逐級下降頁表 (共三級)
+    pte_t *pte = &pagetable[PX(level, va)]; // 看看虛擬位址 va 的是否在頁表裏
+    if(*pte & PTE_V) { // 若是，則取得頁表。
       pagetable = (pagetable_t)PTE2PA(*pte);
-    } else {
-      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
+    } else { // 否則，分配新頁表
+      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0) // 不分配或分配失敗
         return 0;
-      memset(pagetable, 0, PGSIZE);
-      *pte = PA2PTE(pagetable) | PTE_V;
+      memset(pagetable, 0, PGSIZE); // 將頁表清為 0
+      *pte = PA2PTE(pagetable) | PTE_V; // 取得頁表項 PTE
     }
   }
-  return &pagetable[PX(0, va)];
+  return &pagetable[PX(0, va)]; // 傳回 0 級頁表
 }
 
 // Look up a virtual address, return the physical address,
@@ -139,16 +139,16 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 {
   uint64 a, last;
   pte_t *pte;
-
-  a = PGROUNDDOWN(va);
-  last = PGROUNDDOWN(va + size - 1);
+  // 映射範圍：從 va 到 va+size
+  a = PGROUNDDOWN(va); // 第一頁的頁號
+  last = PGROUNDDOWN(va + size - 1); // 最後一頁的頁號
   for(;;){
-    if((pte = walk(pagetable, a, 1)) == 0)
+    if((pte = walk(pagetable, a, 1)) == 0) // 找出頁 a 對應的 pte，若不存在則創造一個可用空頁 (因 alloc=1)
       return -1;
     if(*pte & PTE_V)
       panic("remap");
     *pte = PA2PTE(pa) | perm | PTE_V;
-    if(a == last)
+    if(a == last) // 如果已經到了最後一頁，則完成並離開
       break;
     a += PGSIZE;
     pa += PGSIZE;

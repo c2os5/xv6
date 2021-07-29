@@ -13,7 +13,7 @@
 trampoline:
 .align 4
 .globl uservec
-uservec:    
+uservec:# 進入使用者中斷    
 	#
         # trap.c sets stvec to point here, so
         # traps from user space start here,
@@ -23,12 +23,12 @@ uservec:
         # sscratch points to where the process's p->trapframe is
         # mapped into user space, at TRAPFRAME.
         #
-        
-	# swap a0 and sscratch
-        # so that a0 is TRAPFRAME
-        csrrw a0, sscratch, a0
+        # ------------ 以下是儲存 user process 暫存器的程式段落 ------------------
+	# swap a0 and sscratch    # 原本 sscratch = p->trapframe, 現在兩者交換 swap(sscratch, a0)
+        # so that a0 is TRAPFRAME # 所以現在 a0 = p->trapframe
+        csrrw a0, sscratch, a0 
 
-        # save the user registers in TRAPFRAME
+        # save the user registers in TRAPFRAME # 儲存所有 user process 的暫存器到 p->trapframe
         sd ra, 40(a0)
         sd sp, 48(a0)
         sd gp, 56(a0)
@@ -61,31 +61,31 @@ uservec:
         sd t6, 280(a0)
 
 	# save the user a0 in p->trapframe->a0
-        csrr t0, sscratch
-        sd t0, 112(a0)
-
+        csrr t0, sscratch # sscratch 就是剛剛和 a0 交換的，所以就是 p->trapframe
+        sd t0, 112(a0)    # 將 p->trapframe 存入 112(p->trapframe)
+        # ------- 以下是恢復核心暫存器的處理程式 --------------------
         # restore kernel stack pointer from p->trapframe->kernel_sp
-        ld sp, 8(a0)
+        ld sp, 8(a0)      # 恢復堆疊
 
         # make tp hold the current hartid, from p->trapframe->kernel_hartid
-        ld tp, 32(a0)
+        ld tp, 32(a0)     # tp = kernel.hartid
 
         # load the address of usertrap(), p->trapframe->kernel_trap
-        ld t0, 16(a0)
+        ld t0, 16(a0)     # t0 = usertrap
 
         # restore kernel page table from p->trapframe->kernel_satp
         ld t1, 0(a0)
-        csrw satp, t1
-        sfence.vma zero, zero
+        csrw satp, t1     # 恢復核心的分頁表
+        sfence.vma zero, zero # 清除 TLB 讓緩存失效
 
         # a0 is no longer valid, since the kernel page
         # table does not specially map p->tf.
 
         # jump to usertrap(), which does not return
-        jr t0
+        jr t0             # 跳到 usertrap()
 
 .globl userret
-userret:
+userret:# 從使用者中斷返回
         # userret(TRAPFRAME, pagetable)
         # switch from kernel to user.
         # usertrapret() calls here.
@@ -93,9 +93,9 @@ userret:
         # a1: user page table, for satp.
 
         # switch to the user page table.
-        csrw satp, a1
+        csrw satp, a1              # 切回使用者分頁表
         sfence.vma zero, zero
-
+        # ------- 以下是恢復使用者暫存器的處理程式 --------------------
         # put the saved user a0 in sscratch, so we
         # can swap it with our a0 (TRAPFRAME) in the last step.
         ld t0, 112(a0)

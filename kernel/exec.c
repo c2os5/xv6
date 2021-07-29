@@ -23,19 +23,19 @@ exec(char *path, char **argv)
 
   begin_op();
 
-  if((ip = namei(path)) == 0){
+  if((ip = namei(path)) == 0){ // 取得 path ELF 檔對應的 inode ptr (ip)
     end_op();
     return -1;
   }
   ilock(ip);
 
   // Check ELF header
-  if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))
+  if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf)) // 讀取該 inode
     goto bad;
-  if(elf.magic != ELF_MAGIC)
+  if(elf.magic != ELF_MAGIC) // 若不是 ELF 則失敗
     goto bad;
 
-  if((pagetable = proc_pagetable(p)) == 0)
+  if((pagetable = proc_pagetable(p)) == 0) // 分配頁表
     goto bad;
 
   // Load program into memory.
@@ -49,13 +49,13 @@ exec(char *path, char **argv)
     if(ph.vaddr + ph.memsz < ph.vaddr)
       goto bad;
     uint64 sz1;
-    if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz)) == 0)
+    if((sz1 = uvmalloc(pagetable, sz, ph.vaddr + ph.memsz)) == 0) // 為每個ELF段分配內存
       goto bad;
     sz = sz1;
     if(ph.vaddr % PGSIZE != 0)
       goto bad;
-    if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0)
-      goto bad;
+    if(loadseg(pagetable, ph.vaddr, ip, ph.off, ph.filesz) < 0) // 把每個段加載到內存中 (loadseg用walkaddr找到分配的內存的物理地址，在這個地址上寫入ELF段的每一頁，用readi從文件中讀取)
+      goto bad; 
   }
   iunlockput(ip);
   end_op();
@@ -64,8 +64,8 @@ exec(char *path, char **argv)
   p = myproc();
   uint64 oldsz = p->sz;
 
-  // Allocate two pages at the next page boundary.
-  // Use the second as the user stack.
+  // Allocate two pages at the next page boundary. 為何分配兩頁？第二個是堆疊，那第一個幹嘛用？
+  // Use the second as the user stack.  答：第一個是不可訪問頁，當堆疊溢位時會觸發錯誤中斷。
   sz = PGROUNDUP(sz);
   uint64 sz1;
   if((sz1 = uvmalloc(pagetable, sz, sz + 2*PGSIZE)) == 0)
@@ -75,7 +75,7 @@ exec(char *path, char **argv)
   sp = sz;
   stackbase = sp - PGSIZE;
 
-  // Push argument strings, prepare rest of stack in ustack.
+  // Push argument strings, prepare rest of stack in ustack. 在堆疊中推入 argv 字串
   for(argc = 0; argv[argc]; argc++) {
     if(argc >= MAXARG)
       goto bad;
@@ -83,13 +83,13 @@ exec(char *path, char **argv)
     sp -= sp % 16; // riscv sp must be 16-byte aligned
     if(sp < stackbase)
       goto bad;
-    if(copyout(pagetable, sp, argv[argc], strlen(argv[argc]) + 1) < 0)
+    if(copyout(pagetable, sp, argv[argc], strlen(argv[argc]) + 1) < 0) // 複製失敗就離開
       goto bad;
     ustack[argc] = sp;
   }
   ustack[argc] = 0;
 
-  // push the array of argv[] pointers.
+  // push the array of argv[] pointers. 推入 argv 的指標
   sp -= (argc+1) * sizeof(uint64);
   sp -= sp % 16;
   if(sp < stackbase)
@@ -100,7 +100,7 @@ exec(char *path, char **argv)
   // arguments to user main(argc, argv)
   // argc is returned via the system call return
   // value, which goes in a0.
-  p->trapframe->a1 = sp;
+  p->trapframe->a1 = sp; // 設定 a1=argv
 
   // Save program name for debugging.
   for(last=s=path; *s; s++)
@@ -109,10 +109,10 @@ exec(char *path, char **argv)
   safestrcpy(p->name, last, sizeof(p->name));
     
   // Commit to the user image.
-  oldpagetable = p->pagetable;
+  oldpagetable = p->pagetable; // 註：oldpagetable 指向 fork 時的 process，現在已經換成新 process 了。
   p->pagetable = pagetable;
   p->sz = sz;
-  p->trapframe->epc = elf.entry;  // initial program counter = main
+  p->trapframe->epc = elf.entry;  // initial program counter = main (進入點為 main)
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz);
 

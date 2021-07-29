@@ -320,20 +320,20 @@ sfence_vma()
 }
 
 
-#define PGSIZE 4096 // bytes per page
+#define PGSIZE 4096 // bytes per page  每頁 4096 byte
 #define PGSHIFT 12  // bits of offset within a page
 
 #define PGROUNDUP(sz)  (((sz)+PGSIZE-1) & ~(PGSIZE-1))
-#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1))
+#define PGROUNDDOWN(a) (((a)) & ~(PGSIZE-1)) // 取得頁碼 (截掉最後 12 位元的 offset 部分)
 
-#define PTE_V (1L << 0) // valid
-#define PTE_R (1L << 1)
-#define PTE_W (1L << 2)
-#define PTE_X (1L << 3)
+#define PTE_V (1L << 0) // valid, 有效
+#define PTE_R (1L << 1) // 可讀取
+#define PTE_W (1L << 2) // 可寫入
+#define PTE_X (1L << 3) // 可執行
 #define PTE_U (1L << 4) // 1 -> user can access
 
-// shift a physical address to the right place for a PTE.
-#define PA2PTE(pa) ((((uint64)pa) >> 12) << 10)
+// shift a physical address to the right place for a PTE. 將實體位址(PA)轉為頁表項(PTE)
+#define PA2PTE(pa) ((((uint64)pa) >> 12) << 10) // 由於每頁 4096 byte, 所以最小的 12 bits offset 不在頁表項中，可去掉。
 
 #define PTE2PA(pte) (((pte) >> 10) << 12)
 
