@@ -1,4 +1,4 @@
-// Buffer cache.
+// Buffer cache. // 磁碟的緩衝區塊管理模組
 //
 // The buffer cache is a linked list of buf structures holding
 // cached copies of disk block contents.  Caching disk blocks
@@ -8,7 +8,7 @@
 // Interface:
 // * To get a buffer for a particular disk block, call bread.
 // * After changing buffer data, call bwrite to write it to disk.
-// * When done with the buffer, call brelse.
+// * When done with the buffer, call brelse. (全名 brelease，釋放緩衝區)
 // * Do not use the buffer after calling brelse.
 // * Only one process at a time can use a buffer,
 //     so do not keep them longer than necessary.
@@ -23,6 +23,7 @@
 #include "fs.h"
 #include "buf.h"
 
+// bio.c 的資料結構物件
 struct {
   struct spinlock lock;
   struct buf buf[NBUF];
@@ -30,7 +31,7 @@ struct {
   // Linked list of all buffers, through prev/next.
   // Sorted by how recently the buffer was used.
   // head.next is most recent, head.prev is least.
-  struct buf head;
+  struct buf head; // 將所有緩衝區塊都串在一起的雙向鏈結串列。
 } bcache;
 
 void
@@ -43,7 +44,7 @@ binit(void)
   // Create linked list of buffers
   bcache.head.prev = &bcache.head;
   bcache.head.next = &bcache.head;
-  for(b = bcache.buf; b < bcache.buf+NBUF; b++){
+  for(b = bcache.buf; b < bcache.buf+NBUF; b++){ // 將所有緩衝區放入雙向鏈結串列
     b->next = bcache.head.next;
     b->prev = &bcache.head;
     initsleeplock(&b->lock, "buffer");
@@ -63,9 +64,9 @@ bget(uint dev, uint blockno)
   acquire(&bcache.lock);
 
   // Is the block already cached?
-  for(b = bcache.head.next; b != &bcache.head; b = b->next){
-    if(b->dev == dev && b->blockno == blockno){
-      b->refcnt++;
+  for(b = bcache.head.next; b != &bcache.head; b = b->next){ // 尋找 blockno 是否在緩衝中
+    if(b->dev == dev && b->blockno == blockno){ // 若有找到
+      b->refcnt++; // 將引用數加一
       release(&bcache.lock);
       acquiresleep(&b->lock);
       return b;

@@ -603,10 +603,10 @@ int
 either_copyout(int user_dst, uint64 dst, void *src, uint64 len)
 {
   struct proc *p = myproc();
-  if(user_dst){
+  if(user_dst){ // 若是使用者行程，呼叫 copyout 將 src 複製到 dst
     return copyout(p->pagetable, dst, src, len);
   } else {
-    memmove((char *)dst, src, len);
+    memmove((char *)dst, src, len); // 若是核心本身，直接記憶體複製即可！
     return 0;
   }
 }
@@ -618,7 +618,7 @@ int
 either_copyin(void *dst, int user_src, uint64 src, uint64 len)
 {
   struct proc *p = myproc();
-  if(user_src){
+  if(user_src){ // 若是使用者行程，呼叫 copyin 將 src 複製到 dst
     return copyin(p->pagetable, dst, src, len);
   } else {
     memmove(dst, (char*)src, len);

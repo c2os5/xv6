@@ -1,4 +1,4 @@
-struct rtcdate {
+struct rtcdate { // 時間=年月日時分秒
   uint second;
   uint minute;
   uint hour;

@@ -14,11 +14,11 @@ void freerange(void *pa_start, void *pa_end);
 extern char end[]; // first address after kernel.
                    // defined by kernel.ld.
 
-struct run {
+struct run { // 用來管理自由區塊的鏈表 (freelist)
   struct run *next;
 };
 
-struct {
+struct { // 本檔案 kalloc.c 的主要資料結構
   struct spinlock lock;
   struct run *freelist;
 } kmem;
@@ -26,16 +26,16 @@ struct {
 void
 kinit()
 {
-  initlock(&kmem.lock, "kmem");
-  freerange(end, (void*)PHYSTOP);
+  initlock(&kmem.lock, "kmem"); // 設定鎖
+  freerange(end, (void*)PHYSTOP); // 將 end 到 PHYSTOP 的記憶體範圍納入管理
 }
 
 void
 freerange(void *pa_start, void *pa_end)
 {
   char *p;
-  p = (char*)PGROUNDUP((uint64)pa_start);
-  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
+  p = (char*)PGROUNDUP((uint64)pa_start); // 取得開頭區塊起始位址
+  for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE) // 一頁一頁納入自由鏈表管理
     kfree(p);
 }
 
@@ -44,7 +44,7 @@ freerange(void *pa_start, void *pa_end)
 // call to kalloc().  (The exception is when
 // initializing the allocator; see kinit above.)
 void
-kfree(void *pa)
+kfree(void *pa) // 將 pa 對應頁納入自由鏈表管理
 {
   struct run *r;
 
@@ -52,12 +52,13 @@ kfree(void *pa)
     panic("kfree");
 
   // Fill with junk to catch dangling refs.
-  memset(pa, 1, PGSIZE);
+  memset(pa, 1, PGSIZE); // 整塊填入特定樣式 0x01 
 
+  // 以下程式讓本頁 pa 成為新的鏈表頭  (pa->next = freelist)
   r = (struct run*)pa;
 
   acquire(&kmem.lock);
-  r->next = kmem.freelist;
+  r->next = kmem.freelist; 
   kmem.freelist = r;
   release(&kmem.lock);
 }
@@ -71,6 +72,8 @@ kalloc(void)
   struct run *r;
 
   acquire(&kmem.lock);
+
+  // 以下程式將第一塊分配出去，並將 freelist 指向第二塊
   r = kmem.freelist;
   if(r)
     kmem.freelist = r->next;
@@ -80,3 +83,4 @@ kalloc(void)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
 }
+ 

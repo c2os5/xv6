@@ -147,11 +147,11 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
       return -1;
     if(*pte & PTE_V)
       panic("remap");
-    *pte = PA2PTE(pa) | perm | PTE_V;
+    *pte = PA2PTE(pa) | perm | PTE_V; // 設定 pa 的分頁表項 (page table entry), 屬性為 perm | PTE_V
     if(a == last) // 如果已經到了最後一頁，則完成並離開
       break;
-    a += PGSIZE;
-    pa += PGSIZE;
+    a += PGSIZE; // 前進到下一個邏輯頁
+    pa += PGSIZE; // 前進到下一個實體頁
   }
   return 0;
 }
@@ -337,7 +337,7 @@ uvmclear(pagetable_t pagetable, uint64 va)
   *pte &= ~PTE_U;
 }
 
-// Copy from kernel to user.
+// Copy from kernel to user. // 從核心複製資料給使用者行程。
 // Copy len bytes from src to virtual address dstva in a given page table.
 // Return 0 on success, -1 on error.
 int
@@ -362,7 +362,7 @@ copyout(pagetable_t pagetable, uint64 dstva, char *src, uint64 len)
   return 0;
 }
 
-// Copy from user to kernel.
+// Copy from user to kernel. // 從使用者行程複製資料給核心
 // Copy len bytes to dst from virtual address srcva in a given page table.
 // Return 0 on success, -1 on error.
 int
@@ -387,7 +387,7 @@ copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
   return 0;
 }
 
-// Copy a null-terminated string from user to kernel.
+// Copy a null-terminated string from user to kernel. // 從使用者行程複製字串給核心
 // Copy bytes to dst from virtual address srcva in a given page table,
 // until a '\0', or max.
 // Return 0 on success, -1 on error.

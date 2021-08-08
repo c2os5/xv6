@@ -13,9 +13,9 @@
 // unused RAM after 80000000.
 
 // the kernel uses physical memory thus:
-// 80000000 -- entry.S, then kernel text and data
-// end -- start of kernel page allocation area
-// PHYSTOP -- end RAM used by the kernel
+// 80000000 -- entry.S, then kernel text and data (核心區)
+// end -- start of kernel page allocation area (分頁表)
+// PHYSTOP -- end RAM used by the kernel (結束點)
 
 // qemu puts UART registers here in physical memory.
 #define UART0 0x10000000L
@@ -25,12 +25,12 @@
 #define VIRTIO0 0x10001000
 #define VIRTIO0_IRQ 1
 
-// core local interruptor (CLINT), which contains the timer.
+// core local interruptor (CLINT), which contains the timer. // 時間中斷相關
 #define CLINT 0x2000000L
 #define CLINT_MTIMECMP(hartid) (CLINT + 0x4000 + 8*(hartid))
 #define CLINT_MTIME (CLINT + 0xBFF8) // cycles since boot.
 
-// qemu puts platform-level interrupt controller (PLIC) here.
+// qemu puts platform-level interrupt controller (PLIC) here. // 中斷控制器相關
 #define PLIC 0x0c000000L
 #define PLIC_PRIORITY (PLIC + 0x0)
 #define PLIC_PENDING (PLIC + 0x1000)
@@ -44,12 +44,12 @@
 // the kernel expects there to be RAM
 // for use by the kernel and user pages
 // from physical address 0x80000000 to PHYSTOP.
-#define KERNBASE 0x80000000L
-#define PHYSTOP (KERNBASE + 128*1024*1024)
+#define KERNBASE 0x80000000L // 核心起始點
+#define PHYSTOP (KERNBASE + 128*1024*1024) // 核心大小最大為 128MB
 
 // map the trampoline page to the highest address,
 // in both user and kernel space.
-#define TRAMPOLINE (MAXVA - PGSIZE)
+#define TRAMPOLINE (MAXVA - PGSIZE) // 最後一頁是彈跳床 TRAMPOLINE
 
 // map kernel stacks beneath the trampoline,
 // each surrounded by invalid guard pages.

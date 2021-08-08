@@ -259,21 +259,21 @@ r_time()
 
 // enable device interrupts
 static inline void
-intr_on()
+intr_on() // 允許中斷
 {
   w_sstatus(r_sstatus() | SSTATUS_SIE);
 }
 
 // disable device interrupts
 static inline void
-intr_off()
+intr_off() // 禁止中斷
 {
   w_sstatus(r_sstatus() & ~SSTATUS_SIE);
 }
 
 // are device interrupts enabled?
 static inline int
-intr_get()
+intr_get() // 中斷禁止了嗎？
 {
   uint64 x = r_sstatus();
   return (x & SSTATUS_SIE) != 0;

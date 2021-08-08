@@ -101,8 +101,8 @@ usertrapret(void)
   // 保存 kernel 的相關暫存器
   // set up trapframe values that uservec will need when
   // the process next re-enters the kernel.
-  p->trapframe->kernel_satp = r_satp();         // kernel page table
-  p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack
+  p->trapframe->kernel_satp = r_satp();         // kernel page table (核心分頁表)
+  p->trapframe->kernel_sp = p->kstack + PGSIZE; // process's kernel stack (核心堆疊)
   p->trapframe->kernel_trap = (uint64)usertrap;
   p->trapframe->kernel_hartid = r_tp();         // hartid for cpuid()
 
@@ -164,7 +164,7 @@ clockintr() // 時間中斷
 {
   acquire(&tickslock);
   ticks++;
-  wakeup(&ticks);
+  wakeup(&ticks); // 喚醒等待時間中斷的行程
   release(&tickslock);
 }
 
