@@ -219,7 +219,7 @@ ialloc(uint dev, short type)
 // that lives on disk, since i-node cache is write-through.
 // Caller must hold ip->lock.
 void
-iupdate(struct inode *ip)
+iupdate(struct inode *ip) // 將記憶體中的 inode 寫出到磁碟
 {
   struct buf *bp;
   struct dinode *dip;
@@ -330,11 +330,11 @@ iunlock(struct inode *ip)
 // All calls to iput() must be inside a transaction in
 // case it has to free the inode.
 void
-iput(struct inode *ip)
+iput(struct inode *ip) // 將記憶體中的 inode 引用數減一，若是最後一個引用，則寫出並釋放記憶體。
 {
   acquire(&icache.lock);
 
-  if(ip->ref == 1 && ip->valid && ip->nlink == 0){
+  if(ip->ref == 1 && ip->valid && ip->nlink == 0){ // 沒有任何行程使用到此 inode 了
     // inode has no links and no other references: truncate and free.
 
     // ip->ref == 1 means no other process can have ip locked,
@@ -343,9 +343,9 @@ iput(struct inode *ip)
 
     release(&icache.lock);
 
-    itrunc(ip);
+    itrunc(ip);    // 刪除 inode 內容
     ip->type = 0;
-    iupdate(ip);
+    iupdate(ip);   // 將記憶體中的 inode 寫出到磁碟
     ip->valid = 0;
 
     releasesleep(&ip->lock);
@@ -353,13 +353,13 @@ iput(struct inode *ip)
     acquire(&icache.lock);
   }
 
-  ip->ref--;
+  ip->ref--; // 引用數減一
   release(&icache.lock);
 }
 
 // Common idiom: unlock, then put.
 void
-iunlockput(struct inode *ip)
+iunlockput(struct inode *ip) // 只是 iunlock+iput ，很常用所以變成函數 iunlockput
 {
   iunlock(ip);
   iput(ip);
@@ -375,26 +375,26 @@ iunlockput(struct inode *ip)
 // Return the disk block address of the nth block in inode ip.
 // If there is no such block, bmap allocates one.
 static uint
-bmap(struct inode *ip, uint bn)
+bmap(struct inode *ip, uint bn) // 傳回 inode 的第 bn 個磁碟區塊代號
 {
   uint addr, *a;
   struct buf *bp;
 
-  if(bn < NDIRECT){
-    if((addr = ip->addrs[bn]) == 0)
-      ip->addrs[bn] = addr = balloc(ip->dev);
+  if(bn < NDIRECT){ // bn < 直接區塊數 (NDIRECT)
+    if((addr = ip->addrs[bn]) == 0) // 而且還沒對應到磁碟區塊
+      ip->addrs[bn] = addr = balloc(ip->dev); // 設定對應磁碟區塊
     return addr;
   }
   bn -= NDIRECT;
 
-  if(bn < NINDIRECT){
+  if(bn < NINDIRECT){ // 若是在間接節點區
     // Load indirect block, allocating if necessary.
-    if((addr = ip->addrs[NDIRECT]) == 0)
-      ip->addrs[NDIRECT] = addr = balloc(ip->dev);
-    bp = bread(ip->dev, addr);
-    a = (uint*)bp->data;
-    if((addr = a[bn]) == 0){
-      a[bn] = addr = balloc(ip->dev);
+    if((addr = ip->addrs[NDIRECT]) == 0) // 該間接節點沒人用
+      ip->addrs[NDIRECT] = addr = balloc(ip->dev); // 分配磁碟區塊當間接節點
+    bp = bread(ip->dev, addr); // 讀進該區塊
+    a = (uint*)bp->data;       // 取得該索引陣列 a
+    if((addr = a[bn]) == 0){   // 若索引的第 bn 格沒對應到磁碟區塊
+      a[bn] = addr = balloc(ip->dev); // 設定對應磁碟區塊
       log_write(bp);
     }
     brelse(bp);
@@ -407,20 +407,20 @@ bmap(struct inode *ip, uint bn)
 // Truncate inode (discard contents).
 // Caller must hold ip->lock.
 void
-itrunc(struct inode *ip)
+itrunc(struct inode *ip) // 刪除 inode 內容，並回收磁碟區塊
 {
   int i, j;
   struct buf *bp;
   uint *a;
 
-  for(i = 0; i < NDIRECT; i++){
+  for(i = 0; i < NDIRECT; i++){ // 釋放直接區塊
     if(ip->addrs[i]){
       bfree(ip->dev, ip->addrs[i]);
       ip->addrs[i] = 0;
     }
   }
 
-  if(ip->addrs[NDIRECT]){
+  if(ip->addrs[NDIRECT]){ // 釋放間接區塊
     bp = bread(ip->dev, ip->addrs[NDIRECT]);
     a = (uint*)bp->data;
     for(j = 0; j < NINDIRECT; j++){
@@ -433,7 +433,7 @@ itrunc(struct inode *ip)
   }
 
   ip->size = 0;
-  iupdate(ip);
+  iupdate(ip); // 歸還 inode 對應的磁碟區塊
 }
 
 // Copy stat information from inode.

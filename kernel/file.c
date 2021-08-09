@@ -1,4 +1,4 @@
-//
+// 檔案表與讀寫的相關操作
 // Support functions for system calls that involve file descriptors.
 //
 
@@ -13,37 +13,37 @@
 #include "stat.h"
 #include "proc.h"
 
-struct devsw devsw[NDEV];
+struct devsw devsw[NDEV]; // 裝置表
 struct {
   struct spinlock lock;
   struct file file[NFILE];
-} ftable;
+} ftable; // 檔案表
 
 void
 fileinit(void)
 {
-  initlock(&ftable.lock, "ftable");
+  initlock(&ftable.lock, "ftable"); // 此模組的鎖
 }
 
-// Allocate a file structure.
+// Allocate a file structure. (open 時會找出 ftable 中哪格可以用)
 struct file*
 filealloc(void)
 {
   struct file *f;
 
   acquire(&ftable.lock);
-  for(f = ftable.file; f < ftable.file + NFILE; f++){
-    if(f->ref == 0){
-      f->ref = 1;
+  for(f = ftable.file; f < ftable.file + NFILE; f++){ // 對於整個檔案表
+    if(f->ref == 0){                                  // 找到一格沒被使用的
+      f->ref = 1;                                     // 設定成已被使用
       release(&ftable.lock);
-      return f;
+      return f;                                       // 傳回該檔案描述子
     }
   }
   release(&ftable.lock);
   return 0;
 }
 
-// Increment ref count for file f.
+// Increment ref count for file f. (增加 f 檔案描述子的引用次數)
 struct file*
 filedup(struct file *f)
 {
@@ -57,17 +57,18 @@ filedup(struct file *f)
 
 // Close file f.  (Decrement ref count, close when reaches 0.)
 void
-fileclose(struct file *f)
+fileclose(struct file *f) // 關閉檔案
 {
   struct file ff;
 
   acquire(&ftable.lock);
   if(f->ref < 1)
     panic("fileclose");
-  if(--f->ref > 0){
+  if(--f->ref > 0){ // 若還有人用，就直接返回
     release(&ftable.lock);
     return;
   }
+  // 已經沒人用了，回收對應的那一格
   ff = *f;
   f->ref = 0;
   f->type = FD_NONE;
@@ -75,9 +76,9 @@ fileclose(struct file *f)
 
   if(ff.type == FD_PIPE){
     pipeclose(ff.pipe, ff.writable);
-  } else if(ff.type == FD_INODE || ff.type == FD_DEVICE){
+  } else if(ff.type == FD_INODE || ff.type == FD_DEVICE){ // 若是真的檔案 (非 pipe 或 console ...)
     begin_op();
-    iput(ff.ip);
+    iput(ff.ip); // 將緩衝內容寫出去
     end_op();
   }
 }

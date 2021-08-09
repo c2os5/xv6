@@ -28,7 +28,7 @@ struct superblock { // 超級區塊
 #define NINDIRECT (BSIZE / sizeof(uint))
 #define MAXFILE (NDIRECT + NINDIRECT)
 
-// On-disk inode structure
+// On-disk inode structure (硬碟中的 inode 結構)
 struct dinode {
   short type;           // File type
   short major;          // Major device number (T_DEVICE only)
@@ -38,13 +38,13 @@ struct dinode {
   uint addrs[NDIRECT+1];   // Data block addresses
 };
 
-// Inodes per block.
+// Inodes per block. (每個區塊的 inode 數量)
 #define IPB           (BSIZE / sizeof(struct dinode))
 
-// Block containing inode i
+// Block containing inode i (第 i 個 inode 存放在哪個區塊)
 #define IBLOCK(i, sb)     ((i) / IPB + sb.inodestart)
 
-// Bitmap bits per block
+// Bitmap bits per block (每個區塊包含幾個 bits)
 #define BPB           (BSIZE*8)
 
 // Block of free map containing bit for block b
