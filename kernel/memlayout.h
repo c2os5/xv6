@@ -1,4 +1,4 @@
-// Physical memory layout
+// Physical memory layout (RISC-V virt 的記憶體配置)
 
 // qemu -machine virt is set up like this,
 // based on qemu's hw/riscv/virt.c:

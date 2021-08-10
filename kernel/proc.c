@@ -6,6 +6,7 @@
 #include "proc.h"
 #include "defs.h"
 
+// 行程管理模組 (process)
 struct cpu cpus[NCPU];
 
 struct proc proc[NPROC];

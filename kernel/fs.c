@@ -24,85 +24,85 @@
 #define min(a, b) ((a) < (b) ? (a) : (b))
 // there should be one superblock per disk device, but we run with
 // only one device
-struct superblock sb; 
+struct superblock sb; // 超級區塊 (包含硬碟中有多少區塊，inode，可用區塊等資訊)
 
 // Read the super block.
 static void
-readsb(int dev, struct superblock *sb)
+readsb(int dev, struct superblock *sb) // 讀取超級區塊
 {
   struct buf *bp;
 
-  bp = bread(dev, 1);
-  memmove(sb, bp->data, sizeof(*sb));
-  brelse(bp);
+  bp = bread(dev, 1); // 第一塊是超級區塊，呼叫 bread 讀入到 bp
+  memmove(sb, bp->data, sizeof(*sb)); // 複製 bp 給 sb
+  brelse(bp); // 釋放 bp
 }
 
 // Init fs
 void
-fsinit(int dev) {
-  readsb(dev, &sb);
+fsinit(int dev) { // 檔案系統初始化
+  readsb(dev, &sb); // 讀入超級區塊
   if(sb.magic != FSMAGIC)
     panic("invalid file system");
-  initlog(dev, &sb);
+  initlog(dev, &sb); // 初始化日誌 log 功能
 }
 
-// Zero a block.
+// Zero a block. (將區塊清零)
 static void
 bzero(int dev, int bno)
 {
   struct buf *bp;
 
-  bp = bread(dev, bno);
-  memset(bp->data, 0, BSIZE);
-  log_write(bp);
-  brelse(bp);
+  bp = bread(dev, bno); // 讀入區塊
+  memset(bp->data, 0, BSIZE); // 清零
+  log_write(bp); // 寫入日誌
+  brelse(bp); // 緩衝區釋放
 }
 
 // Blocks.
 
 // Allocate a zeroed disk block.
 static uint
-balloc(uint dev)
+balloc(uint dev) // 分配一個空區塊
 {
   int b, bi, m;
   struct buf *bp;
 
   bp = 0;
   for(b = 0; b < sb.size; b += BPB){
-    bp = bread(dev, BBLOCK(b, sb));
+    bp = bread(dev, BBLOCK(b, sb)); // 讀取 freemap 對應 b 的區塊號
     for(bi = 0; bi < BPB && b + bi < sb.size; bi++){
-      m = 1 << (bi % 8);
-      if((bp->data[bi/8] & m) == 0){  // Is block free?
-        bp->data[bi/8] |= m;  // Mark block in use.
-        log_write(bp);
-        brelse(bp);
-        bzero(dev, b + bi);
-        return b + bi;
+      m = 1 << (bi % 8); // 算出對應的 bit 位址
+      if((bp->data[bi/8] & m) == 0){  // Is block free? (若該區塊為 free)
+        bp->data[bi/8] |= m;  // Mark block in use. (標示該區塊為已使用)
+        log_write(bp); // 紀錄日誌
+        brelse(bp); // 釋放緩衝
+        bzero(dev, b + bi); // 清除該區塊
+        return b + bi; // 傳回區塊號碼
       }
     }
-    brelse(bp);
+    brelse(bp); // 釋放緩衝
   }
   panic("balloc: out of blocks");
 }
 
-// Free a disk block.
+// Free a disk block. (釋放磁碟區塊)
 static void
 bfree(int dev, uint b)
 {
   struct buf *bp;
   int bi, m;
 
-  bp = bread(dev, BBLOCK(b, sb));
-  bi = b % BPB;
-  m = 1 << (bi % 8);
-  if((bp->data[bi/8] & m) == 0)
-    panic("freeing free block");
-  bp->data[bi/8] &= ~m;
-  log_write(bp);
-  brelse(bp);
+  bp = bread(dev, BBLOCK(b, sb)); // 讀取對應的 free map 區塊
+  bi = b % BPB; // 算出 freeblock 塊中位移
+  m = 1 << (bi % 8); // 算出對應的 bit 位址
+  if((bp->data[bi/8] & m) == 0) // 若該 bit 為 0 (代表沒人用)
+    panic("freeing free block"); // 那就不應該再釋放 => 錯誤
+  bp->data[bi/8] &= ~m; // 將該區塊標示為已使用
+  log_write(bp); // 紀錄日誌
+  brelse(bp); // 釋放緩衝
 }
 
-// Inodes.
+// Inodes. (以下為 inode 相關函數)
 //
 // An inode describes a single unnamed file.
 // The inode disk structure holds metadata: the file's type,
@@ -174,26 +174,26 @@ bfree(int dev, uint b)
 struct {
   struct spinlock lock;
   struct inode inode[NINODE];
-} icache;
+} icache; // 記憶體中的 inode 快取表格
 
 void
 iinit()
 {
   int i = 0;
   
-  initlock(&icache.lock, "icache");
+  initlock(&icache.lock, "icache"); // icache 的鎖
   for(i = 0; i < NINODE; i++) {
-    initsleeplock(&icache.inode[i].lock, "inode");
+    initsleeplock(&icache.inode[i].lock, "inode"); // 每個 inode 都有一個鎖 (sleeplock)
   }
 }
 
-static struct inode* iget(uint dev, uint inum);
+static struct inode* iget(uint dev, uint inum); // 取得 inum 對應的 inode
 
 // Allocate an inode on device dev.
 // Mark it as allocated by  giving it type type.
 // Returns an unlocked but allocated and referenced inode.
 struct inode*
-ialloc(uint dev, short type)
+ialloc(uint dev, short type) // 分配一個新的 inode
 {
   int inum;
   struct buf *bp;
@@ -240,7 +240,7 @@ iupdate(struct inode *ip) // 將記憶體中的 inode 寫出到磁碟
 // and return the in-memory copy. Does not lock
 // the inode and does not read it from disk.
 static struct inode*
-iget(uint dev, uint inum)
+iget(uint dev, uint inum) // 取得 inum 對應的 inode
 {
   struct inode *ip, *empty;
 
@@ -275,7 +275,7 @@ iget(uint dev, uint inum)
 // Increment reference count for ip.
 // Returns ip to enable ip = idup(ip1) idiom.
 struct inode*
-idup(struct inode *ip)
+idup(struct inode *ip) // 引用數加一
 {
   acquire(&icache.lock);
   ip->ref++;
@@ -286,7 +286,7 @@ idup(struct inode *ip)
 // Lock the given inode.
 // Reads the inode from disk if necessary.
 void
-ilock(struct inode *ip)
+ilock(struct inode *ip) // 鎖定該 inode
 {
   struct buf *bp;
   struct dinode *dip;
@@ -314,7 +314,7 @@ ilock(struct inode *ip)
 
 // Unlock the given inode.
 void
-iunlock(struct inode *ip)
+iunlock(struct inode *ip) // 解鎖該 inode
 {
   if(ip == 0 || !holdingsleep(&ip->lock) || ip->ref < 1)
     panic("iunlock");
@@ -439,7 +439,7 @@ itrunc(struct inode *ip) // 刪除 inode 內容，並回收磁碟區塊
 // Copy stat information from inode.
 // Caller must hold ip->lock.
 void
-stati(struct inode *ip, struct stat *st)
+stati(struct inode *ip, struct stat *st) // 取得 inode 中的檔案狀態資訊
 {
   st->dev = ip->dev;
   st->ino = ip->inum;
@@ -453,7 +453,7 @@ stati(struct inode *ip, struct stat *st)
 // If user_dst==1, then dst is a user virtual address;
 // otherwise, dst is a kernel address.
 int
-readi(struct inode *ip, int user_dst, uint64 dst, uint off, uint n)
+readi(struct inode *ip, int user_dst, uint64 dst, uint off, uint n) // 從 inode 中讀取資料 (off 開始 n 個 bytes)
 {
   uint tot, m;
   struct buf *bp;
@@ -484,7 +484,7 @@ readi(struct inode *ip, int user_dst, uint64 dst, uint off, uint n)
 // If the return value is less than the requested n,
 // there was an error of some kind.
 int
-writei(struct inode *ip, int user_src, uint64 src, uint off, uint n)
+writei(struct inode *ip, int user_src, uint64 src, uint off, uint n) // 寫入資料到 inode 中 (off 開始 n 個 bytes)
 {
   uint tot, m;
   struct buf *bp;
@@ -519,7 +519,7 @@ writei(struct inode *ip, int user_src, uint64 src, uint off, uint n)
 // Directories
 
 int
-namecmp(const char *s, const char *t)
+namecmp(const char *s, const char *t) // 比較 path 名稱
 {
   return strncmp(s, t, DIRSIZ);
 }
@@ -527,7 +527,7 @@ namecmp(const char *s, const char *t)
 // Look for a directory entry in a directory.
 // If found, set *poff to byte offset of entry.
 struct inode*
-dirlookup(struct inode *dp, char *name, uint *poff)
+dirlookup(struct inode *dp, char *name, uint *poff) // 尋找 dp 目錄中 name 對應的 inode
 {
   uint off, inum;
   struct dirent de;
@@ -554,7 +554,7 @@ dirlookup(struct inode *dp, char *name, uint *poff)
 
 // Write a new directory entry (name, inum) into the directory dp.
 int
-dirlink(struct inode *dp, char *name, uint inum)
+dirlink(struct inode *dp, char *name, uint inum) // 在 dp 目錄中新增一個 entry (name, inum)
 {
   int off;
   struct dirent de;
@@ -597,7 +597,7 @@ dirlink(struct inode *dp, char *name, uint inum)
 //   skipelem("", name) = skipelem("////", name) = 0
 //
 static char*
-skipelem(char *path, char *name)
+skipelem(char *path, char *name) // 取得相對路徑
 {
   char *s;
   int len;
@@ -626,7 +626,7 @@ skipelem(char *path, char *name)
 // path element into name, which must have room for DIRSIZ bytes.
 // Must be called inside a transaction since it calls iput().
 static struct inode*
-namex(char *path, int nameiparent, char *name)
+namex(char *path, int nameiparent, char *name) // 取的 path 對應的 inode 或其 parent (由 namiparent 決定)
 {
   struct inode *ip, *next;
 
@@ -661,14 +661,14 @@ namex(char *path, int nameiparent, char *name)
 }
 
 struct inode*
-namei(char *path)
+namei(char *path) // 取的 path 對應的 inode
 {
   char name[DIRSIZ];
   return namex(path, 0, name);
 }
 
 struct inode*
-nameiparent(char *path, char *name)
+nameiparent(char *path, char *name) // 取的 path 對應的 inode 之 parent，並將最後一段檔案名稱放入 name
 {
   return namex(path, 1, name);
 }

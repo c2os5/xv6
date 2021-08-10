@@ -1,4 +1,4 @@
-//
+// printf 格式化輸出
 // formatted console output -- printf, panic.
 //
 

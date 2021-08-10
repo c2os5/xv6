@@ -4,12 +4,12 @@
 #include "riscv.h"
 #include "defs.h"
 
-//
+// (中斷控制器)
 // the riscv Platform Level Interrupt Controller (PLIC).
 //
 
 void
-plicinit(void)
+plicinit(void) // 中斷控制器初始化
 {
   // set desired IRQ priorities non-zero (otherwise disabled).
   *(uint32*)(PLIC + UART0_IRQ*4) = 1;

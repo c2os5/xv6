@@ -1,4 +1,5 @@
-// Mutual exclusion spin locks. 旋轉鎖
+// Mutual exclusion spin locks. 
+// 旋轉鎖，透過禁止中斷與 hartid 檢查，避免兩個核心同時存取某變數的機制
 
 #include "types.h"
 #include "param.h"

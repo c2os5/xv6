@@ -10,7 +10,7 @@
 
 #define PIPESIZE 512
 
-struct pipe {
+struct pipe { // 管線結構
   struct spinlock lock;
   char data[PIPESIZE];
   uint nread;     // number of bytes read

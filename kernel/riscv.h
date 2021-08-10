@@ -1,3 +1,8 @@
+// RISC-V 處理器的專用參數與函數，包含：
+// 1. CSR 暫存器的存取函數
+// 2. CSR 暫存器的位元遮罩
+// 3. SV39 分頁表架構的相關函數與定義
+
 // which hart (core) is this?
 static inline uint64
 r_mhartid()

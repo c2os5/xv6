@@ -47,7 +47,7 @@ struct dinode {
 // Bitmap bits per block (每個區塊包含幾個 bits)
 #define BPB           (BSIZE*8)
 
-// Block of free map containing bit for block b
+// Block of free map containing bit for block b (取得 free map 中紀錄該區塊是否 free 的區塊代號)
 #define BBLOCK(b, sb) ((b)/BPB + sb.bmapstart)
 
 // Directory is a file containing a sequence of dirent structures.

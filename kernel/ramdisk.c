@@ -1,4 +1,4 @@
-//
+// 記憶體磁碟
 // ramdisk that uses the disk image loaded by qemu -initrd fs.img
 //
 

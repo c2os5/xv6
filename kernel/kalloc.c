@@ -1,4 +1,4 @@
-// Physical memory allocator, for user processes,
+// Physical memory allocator, for user processes, (分配實體記憶體區塊)
 // kernel stacks, page-table pages,
 // and pipe buffers. Allocates whole 4096-byte pages.
 
@@ -24,14 +24,14 @@ struct { // 本檔案 kalloc.c 的主要資料結構
 } kmem;
 
 void
-kinit()
+kinit() // 將全部實體記憶體區塊納入管理
 {
   initlock(&kmem.lock, "kmem"); // 設定鎖
   freerange(end, (void*)PHYSTOP); // 將 end 到 PHYSTOP 的記憶體範圍納入管理
 }
 
 void
-freerange(void *pa_start, void *pa_end)
+freerange(void *pa_start, void *pa_end) // 將 (pa_start, pa_end) 之間的記憶體區塊納入管理
 {
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start); // 取得開頭區塊起始位址
@@ -67,7 +67,7 @@ kfree(void *pa) // 將 pa 對應頁納入自由鏈表管理
 // Returns a pointer that the kernel can use.
 // Returns 0 if the memory cannot be allocated.
 void *
-kalloc(void)
+kalloc(void) // 分配一頁尚未被使用的實體記憶體
 {
   struct run *r;
 

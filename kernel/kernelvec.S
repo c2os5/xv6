@@ -1,4 +1,4 @@
-	#
+	# (中斷向量)
         # interrupts and exceptions while in supervisor
         # mode come here.
         #
@@ -7,7 +7,7 @@
 .globl kerneltrap
 .globl kernelvec
 .align 4
-kernelvec:
+kernelvec: // 中斷向量
         // make room to save registers. # 分配堆疊以儲存暫存器
         addi sp, sp, -256
 
@@ -90,7 +90,7 @@ kernelvec:
         #
 .globl timervec
 .align 4
-timervec:
+timervec: // 時間中斷
         # start.c has set up the memory that mscratch points to:
         # scratch[0,8,16] : register save area.
         # scratch[24] : address of CLINT's MTIMECMP register.

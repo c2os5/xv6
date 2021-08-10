@@ -1,4 +1,4 @@
-// Sleeping locks // 睡眠鎖
+// Sleeping locks // 睡眠鎖，等待某 spinlock 完成，暫時進入 sleep 狀態
 
 #include "types.h"
 #include "riscv.h"

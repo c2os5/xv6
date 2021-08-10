@@ -83,19 +83,19 @@ fileclose(struct file *f) // 關閉檔案
   }
 }
 
-// Get metadata about file f.
-// addr is a user virtual address, pointing to a struct stat.
+// Get metadata about file f. (取得檔案資訊)
+// addr is a user virtual address, pointing to a struct stat. (addr 是使用者空間的位址，指向 struct stat)
 int
 filestat(struct file *f, uint64 addr)
 {
-  struct proc *p = myproc();
-  struct stat st;
+  struct proc *p = myproc(); // p = 本行程
+  struct stat st; // 檔案資訊
   
-  if(f->type == FD_INODE || f->type == FD_DEVICE){
+  if(f->type == FD_INODE || f->type == FD_DEVICE){ // 若是 inode 或裝置
     ilock(f->ip);
-    stati(f->ip, &st);
+    stati(f->ip, &st); // 取得 inode 內的資訊
     iunlock(f->ip);
-    if(copyout(p->pagetable, addr, (char *)&st, sizeof(st)) < 0)
+    if(copyout(p->pagetable, addr, (char *)&st, sizeof(st)) < 0) // 複製到使用者空間
       return -1;
     return 0;
   }
@@ -105,22 +105,22 @@ filestat(struct file *f, uint64 addr)
 // Read from file f.
 // addr is a user virtual address.
 int
-fileread(struct file *f, uint64 addr, int n)
+fileread(struct file *f, uint64 addr, int n) // 檔案讀取
 {
   int r = 0;
 
-  if(f->readable == 0)
+  if(f->readable == 0) // 若非可讀，離開
     return -1;
 
-  if(f->type == FD_PIPE){
-    r = piperead(f->pipe, addr, n);
-  } else if(f->type == FD_DEVICE){
+  if(f->type == FD_PIPE){ // 若是管道
+    r = piperead(f->pipe, addr, n); // 呼叫 piperead
+  } else if(f->type == FD_DEVICE){ // 若是裝置
     if(f->major < 0 || f->major >= NDEV || !devsw[f->major].read)
       return -1;
-    r = devsw[f->major].read(1, addr, n);
-  } else if(f->type == FD_INODE){
+    r = devsw[f->major].read(1, addr, n); // 呼叫裝置 read 函數
+  } else if(f->type == FD_INODE){ // 若是磁碟 inode
     ilock(f->ip);
-    if((r = readi(f->ip, 1, addr, f->off, n)) > 0)
+    if((r = readi(f->ip, 1, addr, f->off, n)) > 0) // 呼叫 readi
       f->off += r;
     iunlock(f->ip);
   } else {
@@ -133,22 +133,22 @@ fileread(struct file *f, uint64 addr, int n)
 // Write to file f.
 // addr is a user virtual address.
 int
-filewrite(struct file *f, uint64 addr, int n)
+filewrite(struct file *f, uint64 addr, int n) // 檔案寫入
 {
   int r, ret = 0;
 
-  if(f->writable == 0)
+  if(f->writable == 0) // 若非可寫，離開
     return -1;
 
-  if(f->type == FD_PIPE){
-    ret = pipewrite(f->pipe, addr, n);
-  } else if(f->type == FD_DEVICE){
+  if(f->type == FD_PIPE){ // 若是管道
+    ret = pipewrite(f->pipe, addr, n); // 呼叫 pipewrite
+  } else if(f->type == FD_DEVICE){ // 若是裝置
     if(f->major < 0 || f->major >= NDEV || !devsw[f->major].write)
       return -1;
-    ret = devsw[f->major].write(1, addr, n);
-  } else if(f->type == FD_INODE){
-    // write a few blocks at a time to avoid exceeding
-    // the maximum log transaction size, including
+    ret = devsw[f->major].write(1, addr, n); // 呼叫裝置 write函數
+  } else if(f->type == FD_INODE){ // 若是 inode
+    // write a few blocks at a time to avoid exceeding    一次寫很多塊
+    // the maximum log transaction size, including        降低 log 大小
     // i-node, indirect block, allocation blocks,
     // and 2 blocks of slop for non-aligned writes.
     // this really belongs lower down, since writei()
@@ -162,7 +162,7 @@ filewrite(struct file *f, uint64 addr, int n)
 
       begin_op();
       ilock(f->ip);
-      if ((r = writei(f->ip, 1, addr + i, f->off, n1)) > 0)
+      if ((r = writei(f->ip, 1, addr + i, f->off, n1)) > 0) // 呼叫 writei 寫入到磁碟
         f->off += r;
       iunlock(f->ip);
       end_op();

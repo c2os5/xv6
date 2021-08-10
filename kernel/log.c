@@ -7,6 +7,7 @@
 #include "fs.h"
 #include "buf.h"
 
+// 日誌系統，緩衝 I/O 存取，在 end_op() 時才 commit
 // Simple logging that allows concurrent FS system calls.
 //
 // A log transaction contains the updates of multiple FS system
@@ -32,27 +33,27 @@
 
 // Contents of the header block, used for both the on-disk header block
 // and to keep track in memory of logged block# before commit.
-struct logheader {
+struct logheader { // log 的第一塊為表頭
   int n;
   int block[LOGSIZE];
 };
 
-struct log {
-  struct spinlock lock;
-  int start;
-  int size;
+struct log { // 本模組 log.c 的主結構 
+  struct spinlock lock; // 鎖
+  int start;       // 起始區塊
+  int size;        // 總共區塊數
   int outstanding; // how many FS sys calls are executing.
   int committing;  // in commit(), please wait.
-  int dev;
-  struct logheader lh;
+  int dev;         // 裝置代號
+  struct logheader lh; // 表頭
 };
-struct log log;
+struct log log; // 全域變數
 
 static void recover_from_log(void);
 static void commit();
 
 void
-initlog(int dev, struct superblock *sb)
+initlog(int dev, struct superblock *sb) // 日誌結構初始化
 {
   if (sizeof(struct logheader) >= BSIZE)
     panic("initlog: too big logheader");
@@ -66,7 +67,7 @@ initlog(int dev, struct superblock *sb)
 
 // Copy committed blocks from log to their home location
 static void
-install_trans(int recovering)
+install_trans(int recovering) // 將已寫入的區塊還原
 {
   int tail;
 
@@ -84,7 +85,7 @@ install_trans(int recovering)
 
 // Read the log header from disk into the in-memory log header
 static void
-read_head(void)
+read_head(void) // 讀取日誌表頭
 {
   struct buf *buf = bread(log.dev, log.start);
   struct logheader *lh = (struct logheader *) (buf->data);
@@ -100,7 +101,7 @@ read_head(void)
 // This is the true point at which the
 // current transaction commits.
 static void
-write_head(void)
+write_head(void) // 寫入日誌表頭
 {
   struct buf *buf = bread(log.dev, log.start);
   struct logheader *hb = (struct logheader *) (buf->data);
@@ -114,17 +115,17 @@ write_head(void)
 }
 
 static void
-recover_from_log(void)
+recover_from_log(void) // 透過日誌恢復讀寫前的狀態
 {
-  read_head();
-  install_trans(1); // if committed, copy from log to disk
-  log.lh.n = 0;
+  read_head();  // 讀取日誌表頭
+  install_trans(1); // if committed, copy from log to disk (將已寫入區塊恢復)
+  log.lh.n = 0; // 設定 log.lh.n = 0 ，之後用 write_head 就會清空日誌
   write_head(); // clear the log
 }
 
 // called at the start of each FS system call.
 void
-begin_op(void)
+begin_op(void) // 啟動 log，開始記錄此次 io 操作
 {
   acquire(&log.lock);
   while(1){
@@ -144,7 +145,7 @@ begin_op(void)
 // called at the end of each FS system call.
 // commits if this was the last outstanding operation.
 void
-end_op(void)
+end_op(void) // 完成此次 log ，寫入到磁碟中
 {
   int do_commit = 0;
 
@@ -176,7 +177,7 @@ end_op(void)
 
 // Copy modified blocks from cache to log.
 static void
-write_log(void)
+write_log(void) // 將修改過的區塊從 cache 複製到 log
 {
   int tail;
 
@@ -191,12 +192,12 @@ write_log(void)
 }
 
 static void
-commit()
+commit() // 將所有 log 區塊寫入到磁碟中
 {
   if (log.lh.n > 0) {
     write_log();     // Write modified blocks from cache to log
     write_head();    // Write header to disk -- the real commit
-    install_trans(0); // Now install writes to home locations
+    install_trans(0); // Now install writes to home locations (真正寫入區塊)
     log.lh.n = 0;
     write_head();    // Erase the transaction from the log
   }
@@ -212,7 +213,7 @@ commit()
 //   log_write(bp)
 //   brelse(bp)
 void
-log_write(struct buf *b)
+log_write(struct buf *b) // 取代 bwrite，寫入時先記錄在日誌中
 {
   int i;
 
