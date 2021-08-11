@@ -1,4 +1,4 @@
-//
+// QEMU 的虛擬磁碟輸出入 -- virtio
 // virtio device definitions.
 // for both the mmio interface, and virtio descriptors.
 // only tested with qemu.

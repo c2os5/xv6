@@ -1,4 +1,4 @@
-	#
+	# 彈跳床 -- 在 user/kernel 間切換的程式 (進入 user/ 從 user 返回)
         # code to switch between user and kernel space.
         #
         # this code is mapped at the same virtual address

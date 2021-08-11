@@ -7,8 +7,10 @@
 #include "spinlock.h"
 #include "proc.h"
 
+// 行程相關的系統呼叫
+
 uint64
-sys_exit(void)
+sys_exit(void) // 結束行程 exit(n)
 {
   int n;
   if(argint(0, &n) < 0)
@@ -18,19 +20,19 @@ sys_exit(void)
 }
 
 uint64
-sys_getpid(void)
+sys_getpid(void) // 取得行程代號 getpid()
 {
   return myproc()->pid;
 }
 
 uint64
-sys_fork(void)
+sys_fork(void) // 複製行程 fork()
 {
   return fork();
 }
 
 uint64
-sys_wait(void)
+sys_wait(void) // 等待行程結束 wait(status)
 {
   uint64 p;
   if(argaddr(0, &p) < 0)
@@ -39,7 +41,9 @@ sys_wait(void)
 }
 
 uint64
-sys_sbrk(void)
+sys_sbrk(void) // sbrk(n) 增加 n bytes 的行程空間 -- https://linux.die.net/man/2/sbrk 
+// sbrk 名稱為改變 program break 的意思！ (例如 malloc 通常就會呼叫 sbrk 增加大小)
+// https://ithelp.ithome.com.tw/articles/10186995
 {
   int addr;
   int n;
@@ -53,7 +57,7 @@ sys_sbrk(void)
 }
 
 uint64
-sys_sleep(void)
+sys_sleep(void) // 睡眠 n 個 ticks， sleep(20) 為睡 20 個 ticks (xv6 中約兩秒)
 {
   int n;
   uint ticks0;
@@ -74,7 +78,7 @@ sys_sleep(void)
 }
 
 uint64
-sys_kill(void)
+sys_kill(void) // 刪除 pid 行程 kill(pid)
 {
   int pid;
 
@@ -86,7 +90,7 @@ sys_kill(void)
 // return how many clock tick interrupts have occurred
 // since start.
 uint64
-sys_uptime(void)
+sys_uptime(void) // 取得時間 (tick 數，一個 tick 是一次時間中斷的長度)
 {
   uint xticks;
 

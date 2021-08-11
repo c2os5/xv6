@@ -1,4 +1,4 @@
-//
+// QEMU 的虛擬磁碟輸出入 -- virtio 
 // driver for qemu's virtio disk device.
 // uses qemu's mmio interface to virtio.
 // qemu presents a "legacy" virtio interface.
@@ -74,7 +74,7 @@ static struct disk {
 } __attribute__ ((aligned (PGSIZE))) disk;
 
 void
-virtio_disk_init(void)
+virtio_disk_init(void) // 初始化本模組
 {
   uint32 status = 0;
 

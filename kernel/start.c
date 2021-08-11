@@ -69,7 +69,7 @@ timerinit() // 設定並啟動時間中斷
 
   // ask the CLINT for a timer interrupt.
   int interval = 1000000; // cycles; about 1/10th second in qemu.
-  *(uint64*)CLINT_MTIMECMP(id) = *(uint64*)CLINT_MTIME + interval; // 設定下次中段時間
+  *(uint64*)CLINT_MTIMECMP(id) = *(uint64*)CLINT_MTIME + interval; // 設定下次中斷時間
 
   // prepare information in scratch[] for timervec.
   // scratch[0..2] : space for timervec to save registers.

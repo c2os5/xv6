@@ -6,6 +6,8 @@
 #include "proc.h"
 #include "defs.h"
 
+// 陷阱：中斷的相關函數
+
 struct spinlock tickslock;
 uint ticks;
 
@@ -19,7 +21,7 @@ extern int devintr(); // 外部裝置中斷
 void
 trapinit(void)
 {
-  initlock(&tickslock, "time");
+  initlock(&tickslock, "time"); // 本模組的鎖
 }
 
 // set up to take exceptions and traps while in the kernel.

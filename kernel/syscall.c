@@ -6,7 +6,7 @@
 #include "proc.h"
 #include "syscall.h"
 #include "defs.h"
-
+// 系統呼叫 sys_exit(), sys_fork() .....
 // Fetch the uint64 at addr from the current process.
 int
 fetchaddr(uint64 addr, uint64 *ip)
@@ -130,15 +130,15 @@ static uint64 (*syscalls[])(void) = {
 };
 
 void
-syscall(void)
+syscall(void) // 系統呼叫
 {
   int num;
   struct proc *p = myproc();
 
-  num = p->trapframe->a7;
-  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
-    p->trapframe->a0 = syscalls[num]();
-  } else {
+  num = p->trapframe->a7; // a7 中放了系統呼叫代號
+  if(num > 0 && num < NELEM(syscalls) && syscalls[num]) { // 系統呼叫代號正確
+    p->trapframe->a0 = syscalls[num](); // 呼叫該系統呼叫 
+  } else { // 系統呼叫代號錯誤
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);
     p->trapframe->a0 = -1;

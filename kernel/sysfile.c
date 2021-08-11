@@ -1,5 +1,5 @@
-//
-// File-system system calls.
+// 檔案相關的系統呼叫
+// File-system system calls. 
 // Mostly argument checking, since we don't trust
 // user code, and calls into file.c and fs.c.
 //
@@ -18,8 +18,9 @@
 
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
+// 例如: argfd(0, 0, &f)
 static int
-argfd(int n, int *pfd, struct file **pf)
+argfd(int n, int *pfd, struct file **pf) // 取得第 n 個參數為檔案代號 pfd，並將檔案描述子存入 pf 中
 {
   int fd;
   struct file *f;
@@ -38,7 +39,7 @@ argfd(int n, int *pfd, struct file **pf)
 // Allocate a file descriptor for the given file.
 // Takes over file reference from caller on success.
 static int
-fdalloc(struct file *f)
+fdalloc(struct file *f) // 找到檔案表中的一個空格 (fd)，填入檔案 f
 {
   int fd;
   struct proc *p = myproc();
@@ -53,7 +54,7 @@ fdalloc(struct file *f)
 }
 
 uint64
-sys_dup(void)
+sys_dup(void) // 例: dup(fd) 會複製第 fd 個檔案描述子，放在檔案表第一個可用的格子中
 {
   struct file *f;
   int fd;
@@ -67,7 +68,7 @@ sys_dup(void)
 }
 
 uint64
-sys_read(void)
+sys_read(void) // 例: read(fd, p, n) 會從檔案讀取 n 個 byte 放入 p 中。
 {
   struct file *f;
   int n;
@@ -79,7 +80,7 @@ sys_read(void)
 }
 
 uint64
-sys_write(void)
+sys_write(void) // 例: write(fd, p, n) 會在檔案寫入 p 的前 n 個 byte
 {
   struct file *f;
   int n;
@@ -92,7 +93,7 @@ sys_write(void)
 }
 
 uint64
-sys_close(void)
+sys_close(void) // 例: close(fd) 會關閉檔案
 {
   int fd;
   struct file *f;
@@ -105,7 +106,7 @@ sys_close(void)
 }
 
 uint64
-sys_fstat(void)
+sys_fstat(void) // 例: stat(fd) 會取得檔案狀態
 {
   struct file *f;
   uint64 st; // user pointer to struct stat
@@ -117,7 +118,7 @@ sys_fstat(void)
 
 // Create the path new as a link to the same inode as old.
 uint64
-sys_link(void)
+sys_link(void) // link(new, old) 會將 new 連結到 old 檔案。
 {
   char name[DIRSIZ], new[MAXPATH], old[MAXPATH];
   struct inode *dp, *ip;
@@ -167,7 +168,7 @@ bad:
 
 // Is the directory dp empty except for "." and ".." ?
 static int
-isdirempty(struct inode *dp)
+isdirempty(struct inode *dp) // 資料夾是否為空
 {
   int off;
   struct dirent de;
@@ -182,7 +183,7 @@ isdirempty(struct inode *dp)
 }
 
 uint64
-sys_unlink(void)
+sys_unlink(void) // unlink(path) : 取消 path 這個連結 
 {
   struct inode *ip, *dp;
   struct dirent de;
@@ -239,7 +240,7 @@ bad:
 }
 
 static struct inode*
-create(char *path, short type, short major, short minor)
+create(char *path, short type, short major, short minor) // 創建新檔案，傳回 inode
 {
   struct inode *ip, *dp;
   char name[DIRSIZ];
@@ -284,7 +285,7 @@ create(char *path, short type, short major, short minor)
 }
 
 uint64
-sys_open(void)
+sys_open(void) // 開啟檔案 open(fd, mode)
 {
   char path[MAXPATH];
   int fd, omode;
@@ -352,7 +353,7 @@ sys_open(void)
 }
 
 uint64
-sys_mkdir(void)
+sys_mkdir(void) // 創建資料夾 mkdir(path)
 {
   char path[MAXPATH];
   struct inode *ip;
@@ -368,7 +369,7 @@ sys_mkdir(void)
 }
 
 uint64
-sys_mknod(void)
+sys_mknod(void) // mknod(path, major, minor)， 創建 path 對應的 inode， 例如 mknod("console", CONSOLE, 0)
 {
   struct inode *ip;
   char path[MAXPATH];
@@ -388,7 +389,7 @@ sys_mknod(void)
 }
 
 uint64
-sys_chdir(void)
+sys_chdir(void) // 切換目錄，例如 chdir("../b")
 {
   char path[MAXPATH];
   struct inode *ip;
@@ -413,7 +414,7 @@ sys_chdir(void)
 }
 
 uint64
-sys_exec(void)
+sys_exec(void) // exec(path, argv) 將目前行程更換為 path 指定的執行檔，並用 argv 為參數。
 {
   char path[MAXPATH], *argv[MAXARG];
   int i;
@@ -455,7 +456,7 @@ sys_exec(void)
 }
 
 uint64
-sys_pipe(void)
+sys_pipe(void) // pipe(fdarray), 例如: int fds[2]; if(pipe(fds) < 0) ...
 {
   uint64 fdarray; // user pointer to array of two integers
   struct file *rf, *wf;

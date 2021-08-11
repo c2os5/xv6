@@ -6,7 +6,7 @@
 #include "defs.h"
 #include "fs.h"
 
-/*
+/* 虛擬記憶體 -- 分頁表的管理模組
  * the kernel's page table.
  */
 pagetable_t kernel_pagetable;
@@ -17,7 +17,7 @@ extern char trampoline[]; // trampoline.S
 
 // Make a direct-map page table for the kernel.
 pagetable_t
-kvmmake(void)
+kvmmake(void) // 創建核心的虛擬記憶體
 {
   pagetable_t kpgtbl;
 
@@ -51,7 +51,7 @@ kvmmake(void)
 
 // Initialize the one kernel_pagetable
 void
-kvminit(void)
+kvminit(void) // 初始化本模組，創建核心的虛擬分頁表
 {
   kernel_pagetable = kvmmake();
 }
@@ -59,7 +59,7 @@ kvminit(void)
 // Switch h/w page table register to the kernel's page table,
 // and enable paging.
 void
-kvminithart()
+kvminithart() // 啟動分頁機制
 {
   w_satp(MAKE_SATP(kernel_pagetable));
   sfence_vma();
@@ -78,7 +78,7 @@ kvminithart()
 //   12..20 -- 9 bits of level-0 index.
 //    0..11 -- 12 bits of byte offset within the page.
 pte_t *
-walk(pagetable_t pagetable, uint64 va, int alloc)
+walk(pagetable_t pagetable, uint64 va, int alloc) // 傳回虛擬位址 va 對應的 PTE 分頁項
 {
   if(va >= MAXVA)
     panic("walk");
@@ -101,7 +101,7 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
 // or 0 if not mapped.
 // Can only be used to look up user pages.
 uint64
-walkaddr(pagetable_t pagetable, uint64 va)
+walkaddr(pagetable_t pagetable, uint64 va) // 查詢 va 虛擬位址對應的實體位址
 {
   pte_t *pte;
   uint64 pa;
@@ -124,7 +124,7 @@ walkaddr(pagetable_t pagetable, uint64 va)
 // only used when booting.
 // does not flush TLB or enable paging.
 void
-kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
+kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm) // 加入一筆 (虛擬位址 va,實體位址 pa) 映射
 {
   if(mappages(kpgtbl, va, sz, pa, perm) != 0)
     panic("kvmmap");
@@ -135,7 +135,7 @@ kvmmap(pagetable_t kpgtbl, uint64 va, uint64 pa, uint64 sz, int perm)
 // be page-aligned. Returns 0 on success, -1 if walk() couldn't
 // allocate a needed page-table page.
 int
-mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
+mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm) // 創建 va 開始 size bytes 的分頁映射表
 {
   uint64 a, last;
   pte_t *pte;
@@ -160,7 +160,7 @@ mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, int perm)
 // page-aligned. The mappings must exist.
 // Optionally free the physical memory.
 void
-uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
+uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free) // 移除 va 開始 npages 的分頁映射表
 {
   uint64 a;
   pte_t *pte;
@@ -186,7 +186,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
 // create an empty user page table.
 // returns 0 if out of memory.
 pagetable_t
-uvmcreate()
+uvmcreate() // 創建一個新的使用者分頁表
 {
   pagetable_t pagetable;
   pagetable = (pagetable_t) kalloc();
@@ -200,7 +200,8 @@ uvmcreate()
 // for the very first process.
 // sz must be less than a page.
 void
-uvminit(pagetable_t pagetable, uchar *src, uint sz)
+uvminit(pagetable_t pagetable, uchar *src, uint sz) // 被 userinit() 呼叫來創建 initcode 行程
+// 將第一個使用者行程 initcode 載入位址 0，該行程大小不得超出一個分頁。
 {
   char *mem;
 
@@ -215,7 +216,7 @@ uvminit(pagetable_t pagetable, uchar *src, uint sz)
 // Allocate PTEs and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
 uint64
-uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
+uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz) // 讓分頁表從 oldsz 長大到 newsz
 {
   char *mem;
   uint64 a;
@@ -245,7 +246,7 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 // need to be less than oldsz.  oldsz can be larger than the actual
 // process size.  Returns the new process size.
 uint64
-uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
+uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz) // 讓分頁表從 oldsz 縮小到 newsz
 {
   if(newsz >= oldsz)
     return oldsz;
@@ -261,7 +262,7 @@ uvmdealloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 // Recursively free page-table pages.
 // All leaf mappings must already have been removed.
 void
-freewalk(pagetable_t pagetable)
+freewalk(pagetable_t pagetable) // 遞迴釋放整個分頁表
 {
   // there are 2^9 = 512 PTEs in a page table.
   for(int i = 0; i < 512; i++){
@@ -281,7 +282,7 @@ freewalk(pagetable_t pagetable)
 // Free user memory pages,
 // then free page-table pages.
 void
-uvmfree(pagetable_t pagetable, uint64 sz)
+uvmfree(pagetable_t pagetable, uint64 sz) // 釋放分頁表
 {
   if(sz > 0)
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
@@ -295,7 +296,7 @@ uvmfree(pagetable_t pagetable, uint64 sz)
 // returns 0 on success, -1 on failure.
 // frees any allocated pages on failure.
 int
-uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
+uvmcopy(pagetable_t old, pagetable_t new, uint64 sz) // 將父行程的分頁表複製給子行程
 {
   pte_t *pte;
   uint64 pa, i;
@@ -324,8 +325,8 @@ uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
   return -1;
 }
 
-// mark a PTE invalid for user access.
-// used by exec for the user stack guard page.
+// mark a PTE invalid for user access. (將 va 對應的 PTE 標示為 invalid)
+// used by exec for the user stack guard page. (這在 exec 裏用作堆疊的 guard 頁)
 void
 uvmclear(pagetable_t pagetable, uint64 va)
 {

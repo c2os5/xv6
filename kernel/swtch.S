@@ -1,4 +1,4 @@
-# Context switch
+# Context switch (內文切換，C 語言呼叫方法如下)
 #
 #   void swtch(struct context *old, struct context *new);
 # 
@@ -6,7 +6,7 @@
 
 
 .globl swtch
-swtch:
+swtch: # 內文切換，保存舊暫存器群，切換到新暫存器群
         sd ra, 0(a0)
         sd sp, 8(a0)
         sd s0, 16(a0)

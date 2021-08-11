@@ -1,5 +1,5 @@
 #include "types.h"
-
+// 字串相關函數 (含記憶體設定與複製)
 void*
 memset(void *dst, int c, uint n)
 {
