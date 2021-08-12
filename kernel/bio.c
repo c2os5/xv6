@@ -35,7 +35,7 @@ struct {
 } bcache;
 
 void
-binit(void)
+binit(void) // 本模組的初始化動作
 {
   struct buf *b;
 
@@ -57,7 +57,7 @@ binit(void)
 // If not found, allocate a buffer.
 // In either case, return locked buffer.
 static struct buf*
-bget(uint dev, uint blockno)
+bget(uint dev, uint blockno) // 取得 blockno 對應的區塊
 {
   struct buf *b;
 
@@ -91,13 +91,13 @@ bget(uint dev, uint blockno)
 
 // Return a locked buf with the contents of the indicated block.
 struct buf*
-bread(uint dev, uint blockno)
+bread(uint dev, uint blockno) // 讀取 blockno 對應的區塊
 {
   struct buf *b;
 
-  b = bget(dev, blockno);
-  if(!b->valid) {
-    virtio_disk_rw(b, 0);
+  b = bget(dev, blockno); // 取得該緩衝區塊
+  if(!b->valid) { // 若還沒有從磁碟載入
+    virtio_disk_rw(b, 0); // 則呼叫 virtio 模組從磁碟讀入該區塊
     b->valid = 1;
   }
   return b;
@@ -105,17 +105,17 @@ bread(uint dev, uint blockno)
 
 // Write b's contents to disk.  Must be locked.
 void
-bwrite(struct buf *b)
+bwrite(struct buf *b) // 寫入緩衝區塊 b
 {
   if(!holdingsleep(&b->lock))
     panic("bwrite");
-  virtio_disk_rw(b, 1);
+  virtio_disk_rw(b, 1); // 呼叫 virtio 模組寫入該區塊
 }
 
 // Release a locked buffer.
 // Move to the head of the most-recently-used list.
 void
-brelse(struct buf *b)
+brelse(struct buf *b) // 釋放緩衝區塊 b 
 {
   if(!holdingsleep(&b->lock))
     panic("brelse");
@@ -138,14 +138,14 @@ brelse(struct buf *b)
 }
 
 void
-bpin(struct buf *b) {
+bpin(struct buf *b) { // 增加緩衝區塊 b 的引用數
   acquire(&bcache.lock);
   b->refcnt++;
   release(&bcache.lock);
 }
 
 void
-bunpin(struct buf *b) {
+bunpin(struct buf *b) { // 減少緩衝區塊 b 的引用數
   acquire(&bcache.lock);
   b->refcnt--;
   release(&bcache.lock);

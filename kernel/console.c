@@ -53,10 +53,10 @@ struct {
 } cons;
 
 //
-// user write()s to the console go here. // 以下是 write() 呼叫的 console 版本
+// user write()s to the console go here.
 //
 int
-consolewrite(int user_src, uint64 src, int n)
+consolewrite(int user_src, uint64 src, int n) //  write() 呼叫的 console 版本
 {
   int i;
 
@@ -77,7 +77,7 @@ consolewrite(int user_src, uint64 src, int n)
 // or kernel address.
 //
 int
-consoleread(int user_dst, uint64 dst, int n)
+consoleread(int user_dst, uint64 dst, int n) //  read() 呼叫的 console 版本
 {
   uint target;
   int c;
@@ -179,15 +179,15 @@ consoleintr(int c) // 有字元輸入中斷時，會透過 uartintr() 間接呼�
 }
 
 void
-consoleinit(void)
+consoleinit(void) // 初始化本模組
 {
   initlock(&cons.lock, "cons");
 
-  uartinit();
+  uartinit(); // 初始化 UART
 
   // connect read and write system calls
   // to consoleread and consolewrite.
   // 第一號裝置 devsw[1] 為 console
-  devsw[CONSOLE].read = consoleread;
-  devsw[CONSOLE].write = consolewrite;
+  devsw[CONSOLE].read = consoleread;    // 設定 console 的 read 函數
+  devsw[CONSOLE].write = consolewrite;  // 設定 console 的 write 函數
 }
