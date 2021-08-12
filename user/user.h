@@ -1,7 +1,8 @@
+// 使用者標頭檔，包含系統呼叫與字串函數
 struct stat;
 struct rtcdate;
 
-// system calls
+// system calls (系統呼叫)
 int fork(void);
 int exit(int) __attribute__((noreturn));
 int wait(int*);
@@ -24,7 +25,7 @@ char* sbrk(int);
 int sleep(int);
 int uptime(void);
 
-// ulib.c
+// ulib.c (字串函式庫)
 int stat(const char*, struct stat*);
 char* strcpy(char*, const char*);
 void *memmove(void*, const void*, int);

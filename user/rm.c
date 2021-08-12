@@ -13,7 +13,7 @@ main(int argc, char *argv[])
   }
 
   for(i = 1; i < argc; i++){
-    if(unlink(argv[i]) < 0){
+    if(unlink(argv[i]) < 0){ // 移除該路徑，若已沒人用就會連檔案回收
       fprintf(2, "rm: %s failed to delete\n", argv[i]);
       break;
     }

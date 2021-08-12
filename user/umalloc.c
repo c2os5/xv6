@@ -3,7 +3,7 @@
 #include "user/user.h"
 #include "kernel/param.h"
 
-// Memory allocator by Kernighan and Ritchie,
+// Memory allocator by Kernighan and Ritchie, (記憶體分配函式庫，來自 K&R 的 C 語言書籍)
 // The C programming Language, 2nd ed.  Section 8.7.
 
 typedef long Align;

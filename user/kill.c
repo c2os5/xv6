@@ -11,7 +11,7 @@ main(int argc, char **argv)
     fprintf(2, "usage: kill pid...\n");
     exit(1);
   }
-  for(i=1; i<argc; i++)
+  for(i=1; i<argc; i++) // 刪除參數中指定的每一個行程
     kill(atoi(argv[i]));
   exit(0);
 }

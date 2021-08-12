@@ -12,7 +12,7 @@ main(int argc, char *argv[])
     exit(1);
   }
 
-  for(i = 1; i < argc; i++){
+  for(i = 1; i < argc; i++){ // 對每個參數都創建該子資料夾
     if(mkdir(argv[i]) < 0){
       fprintf(2, "mkdir: %s failed to create\n", argv[i]);
       break;

@@ -3,6 +3,8 @@
 #include "kernel/fcntl.h"
 #include "user/user.h"
 
+// 使用者空間的基本字串函式庫
+
 char*
 strcpy(char *s, const char *t)
 {

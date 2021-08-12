@@ -8,7 +8,7 @@ char buf[1024];
 int match(char*, char*);
 
 void
-grep(char *pattern, int fd)
+grep(char *pattern, int fd) // 印出檔案中包含 pattern 的那幾行
 {
   int n, m;
   char *p, *q;
@@ -45,17 +45,17 @@ main(int argc, char *argv[])
   }
   pattern = argv[1];
 
-  if(argc <= 2){
-    grep(pattern, 0);
+  if(argc <= 2){ // 如果沒有指定檔案
+    grep(pattern, 0); // 就從 fd=0 讀進來做 grep
     exit(0);
   }
 
-  for(i = 2; i < argc; i++){
-    if((fd = open(argv[i], 0)) < 0){
+  for(i = 2; i < argc; i++){ // 若有指定檔案 (可多個)
+    if((fd = open(argv[i], 0)) < 0){ // 就開啟檔案
       printf("grep: cannot open %s\n", argv[i]);
       exit(1);
     }
-    grep(pattern, fd);
+    grep(pattern, fd); // 然後對每個檔案做 grep
     close(fd);
   }
   exit(0);

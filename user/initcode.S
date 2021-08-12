@@ -1,5 +1,6 @@
-# Initial process that execs /init.
+# Initial process that execs /init. (第一個使用者行程 initcode 的組合語言)
 # This code runs in user space.
+# 可以在編譯完成後用 od -t xC initcode 去印出機器碼，然後放入 proc.c 的 initcode[] 陣列中
 
 #include "syscall.h"
 

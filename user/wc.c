@@ -1,7 +1,7 @@
 #include "kernel/types.h"
 #include "kernel/stat.h"
 #include "user/user.h"
-
+// 顯示檔案中的有幾個《列 line、詞 word、字 character》
 char buf[512];
 
 void
@@ -29,7 +29,7 @@ wc(int fd, char *name)
     printf("wc: read error\n");
     exit(1);
   }
-  printf("%d %d %d %s\n", l, w, c, name);
+  printf("%d %d %d %s\n", l, w, c, name); // l: line (列) w:word (詞) c:character (字)
 }
 
 int

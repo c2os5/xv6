@@ -1,4 +1,4 @@
-// init: The initial user-level program
+// init: The initial user-level program (第一個使用者行程，會呼叫 sh)
 
 #include "kernel/types.h"
 #include "kernel/stat.h"
